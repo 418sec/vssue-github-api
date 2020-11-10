@@ -32,35 +32,19 @@ export default class GithubV3 implements VssueAPI.Instance {
   owner: string;
   repo: string;
   labels: Array<string>;
-  clientId: string;
-  clientSecret: string;
-  state: string;
-  proxy: string | ((url: string) => string);
   $http: AxiosInstance;
+  $nuxt = (window as any).$nuxt;
 
   constructor({
     baseURL = 'https://github.com',
     owner,
     repo,
-    labels,
-    clientId,
-    clientSecret,
-    state,
-    proxy,
+    labels
   }: VssueAPI.Options) {
-    /* istanbul ignore if */
-    if (typeof clientSecret === 'undefined' || typeof proxy === 'undefined') {
-      throw new Error('clientSecret and proxy is required for GitHub V3');
-    }
     this.baseURL = baseURL;
     this.owner = owner;
     this.repo = repo;
     this.labels = labels;
-
-    this.clientId = clientId;
-    this.clientSecret = clientSecret;
-    this.state = state;
-    this.proxy = proxy;
 
     this.$http = axios.create({
       baseURL:
@@ -118,15 +102,7 @@ export default class GithubV3 implements VssueAPI.Instance {
    * @see https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#1-request-a-users-github-identity
    */
   redirectAuth(): void {
-    window.location.href = buildURL(
-      concatURL(this.baseURL, 'login/oauth/authorize'),
-      {
-        client_id: this.clientId,
-        redirect_uri: window.location.href,
-        scope: 'public_repo',
-        state: this.state,
-      }
-    );
+    throw 'redirectAuth is not implemented in this Vssue API.'
   }
 
   /**
@@ -138,22 +114,11 @@ export default class GithubV3 implements VssueAPI.Instance {
    * If the `code` and `state` exist in the query, and the `state` matches, remove them from query, and try to get the access token.
    */
   async handleAuth(): Promise<VssueAPI.AccessToken> {
-    const query = parseQuery(window.location.search);
-    if (query.code) {
-      if (query.state !== this.state) {
-        return null;
-      }
-      const code = query.code;
-      delete query.code;
-      delete query.state;
-      const replaceURL =
-        buildURL(getCleanURL(window.location.href), query) +
-        window.location.hash;
-      window.history.replaceState(null, '', replaceURL);
-      const accessToken = await this.getAccessToken({ code });
-      return accessToken;
+    if (this.$nuxt.$auth && await this.$nuxt.$auth.loggedIn) {
+      return await this.$nuxt.$auth.user['custom:github_access_token']
+    } else {
+      return null
     }
-    return null;
   }
 
   /**
@@ -162,32 +127,7 @@ export default class GithubV3 implements VssueAPI.Instance {
    * @see https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#2-users-are-redirected-back-to-your-site-by-github
    */
   async getAccessToken({ code }: { code: string }): Promise<string> {
-    /**
-     * access_token api does not support cors
-     * @see https://github.com/isaacs/github/issues/330
-     */
-    const originalURL = concatURL(this.baseURL, 'login/oauth/access_token');
-    const proxyURL =
-      typeof this.proxy === 'function' ? this.proxy(originalURL) : this.proxy;
-    const { data } = await this.$http.post<ResponseAccessToken>(
-      proxyURL,
-      {
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        code,
-        /**
-         * useless but mentioned in docs
-         */
-        // redirect_uri: window.location.href,
-        // state: this.state,
-      },
-      {
-        headers: {
-          Accept: 'application/json',
-        },
-      }
-    );
-    return data.access_token;
+    throw "getAccessToken is not implemented in this Vssue API."
   }
 
   /**
@@ -287,18 +227,7 @@ export default class GithubV3 implements VssueAPI.Instance {
     title: string;
     content: string;
   }): Promise<VssueAPI.Issue> {
-    const { data } = await this.$http.post<ResponseIssue>(
-      `repos/${this.owner}/${this.repo}/issues`,
-      {
-        title,
-        body: content,
-        labels: this.labels,
-      },
-      {
-        headers: { Authorization: `token ${accessToken}` },
-      }
-    );
-    return normalizeIssue(data);
+    throw "postIssue is not implemented in this Vssue API."
   }
 
   /**

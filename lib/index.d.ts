@@ -11,12 +11,9 @@ export default class GithubV3 implements VssueAPI.Instance {
     owner: string;
     repo: string;
     labels: Array<string>;
-    clientId: string;
-    clientSecret: string;
-    state: string;
-    proxy: string | ((url: string) => string);
     $http: AxiosInstance;
-    constructor({ baseURL, owner, repo, labels, clientId, clientSecret, state, proxy, }: VssueAPI.Options);
+    $nuxt: any;
+    constructor({ baseURL, owner, repo, labels }: VssueAPI.Options);
     /**
      * The platform api info
      */
